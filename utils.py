@@ -2,7 +2,7 @@ import re
 
 
 def get_domain_name_from_url(url):
-    domain_name_tpl = 'http.://(.*?)/'
+    domain_name_tpl = '://(.*?)/'
     match_domain = re.search(domain_name_tpl, url)
     if match_domain:
         return match_domain.group(1)
