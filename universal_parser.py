@@ -2,6 +2,8 @@ from bs4 import BeautifulSoup
 import requests
 import re
 
+from utils import get_domain_name_from_url
+
 
 STRING_WIDTH = 80
 HREF_TPL = '%url_text% [%url_href%]'
@@ -79,8 +81,10 @@ class UniversalParser:
         for a in paragraph_obj.findAll('a'):
             if a.has_attr('href') and a.string:
                 tpl = HREF_TPL
-                # todo исправить ссылки с без https://domen
-                tpl = tpl.replace('%url_href%', a.attrs['href'])
+                href = a.attrs['href']
+                if href[0] == '/':
+                    href = f'https://{get_domain_name_from_url(self.url)}{href}'
+                tpl = tpl.replace('%url_href%', href)
                 tpl = tpl.replace('%url_text%', a.string)
                 a.string.replace_with(tpl)
 
@@ -139,7 +143,9 @@ class UniversalParser:
 
 
 if __name__ == "__main__":
-    obj = UniversalParser('https://lenta.ru/news/2022/01/27/budushee_rublya/')  # 'https://www.gazeta.ru/army/2022/01/27/14467249.shtml'
+    lenta_url = 'https://lenta.ru/news/2022/01/27/budushee_rublya/'
+    gazeta_url = 'https://www.gazeta.ru/army/2022/01/27/14467249.shtml'
+    obj = UniversalParser(lenta_url)
     obj.get_request()
     obj.get_soup()
     obj.get_header()
