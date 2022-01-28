@@ -5,6 +5,7 @@ import re
 from utils import get_domain_name_from_url
 
 
+ENDL = '\r\n'
 STRING_WIDTH = 80
 HREF_TPL = '%url_text% [%url_href%]'
 
@@ -25,14 +26,14 @@ class UniversalParser:
         try:
             response = requests.get(self.url)
         except Exception as e:
-            print(f'Ошибка при выполнении запроса:\n{e}')
+            print(f'Ошибка при выполнении запроса:{ENDL}{e}')
             self._html_page = None
             return
 
         try:
             self._html_page = response.text
         except Exception as e:
-            print(f'Ошибка при получении текста из запроса:\n{e}')
+            print(f'Ошибка при получении текста из запроса:{ENDL}{e}')
             self._html_page = None
             return
         return self._html_page
@@ -101,10 +102,10 @@ class UniversalParser:
             tmp_current = tmp_current.strip()
 
             if len(tmp_current) == max_len:
-                strings_list += tmp_current + '\r\n'
+                strings_list += tmp_current + ENDL
                 tmp = ''
             elif len(tmp_current) > max_len:
-                tmp += '\r\n'
+                tmp += ENDL
                 strings_list += tmp
                 tmp = words_list[i]
             elif len(tmp_current) < max_len:
@@ -120,22 +121,22 @@ class UniversalParser:
         for i in range(len(string_list)):
             new_string_list.append(self.split_lines(string_list[i], max_len))
 
-        return '\r\n'.join(new_string_list)
+        return ENDL.join(new_string_list)
 
     def render_text(self):
         """Преобразование промежуточных данных в текст для сохранения"""
 
         string_width = STRING_WIDTH
 
-        rendered_text = f'{self.header}\r\n\r\n'
+        rendered_text = f'{self.header}{2*ENDL}'
 
         paragraphs = ''
         for p in self.paragraphs_obj:
             self.add_to_paragraph_href(p)
             p_string = p.get_text()
-            paragraphs += f'{p_string}\r\n\r\n'
+            paragraphs += f'{p_string}{2*ENDL}'
 
-        rendered_text += f'{paragraphs}\r\n'
+        rendered_text += f'{paragraphs}{ENDL}'
         rendered_text = self.split_all_lines(rendered_text, string_width)
 
         self.rendered_text = rendered_text
