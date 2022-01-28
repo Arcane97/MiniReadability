@@ -7,22 +7,37 @@ from utils import get_domain_name_from_url
 
 ENDL = '\r\n'
 STRING_WIDTH = 80
-HREF_TPL = '%url_text% [%url_href%]'
+HREF_TEMPLATE = '%url_text% [%url_href%]'
+CLASS_ATTRS_FOR_SEARCH = ['content', 'context', 'article', 'text']
 
 
 class UniversalParser:
-    def __init__(self, url):
+    """ Класс для парсинга сайтов со статьями.
+    Парсит заголовок и абзацы.
+    """
+    def __init__(self, url: str):
+        """
+        :param url: ссылка на сайт вида: 'https://lenta.ru/news/2022/01/27/budushee_rublya/'
+        """
         # ссылка на сайт
         self.url = url
 
-        # промежуточные данные
-        self._html_page = None
-        self._soup = None
-        self.header = ''
-        self.paragraphs_obj = None
-        self.rendered_text = ''
+        self._string_width = STRING_WIDTH
 
-    def get_request(self):
+        # html код старицы (str)
+        self._html_page = ''
+        # BeautifulSoup объект страницы
+        self._soup_obj = None
+        # заголовок страницы (str)
+        self._header = 'Заголовок'
+        # список объектов абзацев [bs4.element.Tag, ]
+        self._paragraphs_obj_list = []
+        # отформатированный текст
+        self.formatted_text = ''
+
+    def _send_request(self):
+        """ Отправка запроса для получения страницы
+        """
         try:
             response = requests.get(self.url)
         except Exception as e:
@@ -35,120 +50,135 @@ class UniversalParser:
         except Exception as e:
             print(f'Ошибка при получении текста из запроса:{ENDL}{e}')
             self._html_page = None
-            return
-        return self._html_page
 
-    def get_soup(self):
+    def _create_soup_obj(self):
+        """ Создание объекта BeautifulSoup
+        """
         if not self._html_page:
-            self._soup = None
+            self._soup_obj = None
             return
 
-        self._soup = BeautifulSoup(self._html_page, "html.parser")
-        return self._soup
+        self._soup_obj = BeautifulSoup(self._html_page, "html.parser")
 
-    def get_header(self):
-        """Получение заголовка из <h1> либо <meta name="title" content="<Заголовок>">"""
-        header = self._soup.body.find('h1')
-        if header != None:
+    def _find_header_from_soup(self):
+        """ Нахождение заголовка из self._soup_obj
+        """
+        header = self._soup_obj.body.find('h1')
+        if header is not None:
             header = header.get_text()
         else:
-            header = self._soup.head.find('meta', attrs={'name': 'title'})
+            header = self._soup_obj.head.find('meta', attrs={'name': 'title'})
             header = header.attrs['content']
 
-        # header = self.remove_white_spaces(header)
-        self.header = header
-        # print(self.header)
+        self._header = header
 
-    def get_paragraphs(self):
-        """Получение объектов <p> тегов"""
-        class_attrs_for_search = '|'.join(['content', 'context', 'article', 'text'])
-        content = self._soup.body.findAll(attrs={"class": re.compile(class_attrs_for_search)})
+    def _find_paragraphs(self):
+        """ Нахождение тегов (bs4.element.Tag) с абзацами
+        """
+        class_attrs_for_search = '|'.join(CLASS_ATTRS_FOR_SEARCH)
+        content_pattern = re.compile(class_attrs_for_search)
+        content = self._soup_obj.body.findAll(attrs={"class": content_pattern})
         p_objects = []
         already_used = []
+
         for item in content:
             paragraphs = item.findAll('p')
             for p in paragraphs:
                 if id(p) in already_used:
                     continue
-                if len(p.get_text()) < 30:
-                    continue
-                p_objects += [p]
+                p_objects.append(p)
                 already_used.append(id(p))
 
-        self.paragraphs_obj = p_objects
-        # print(self.paragraphs_obj)
+        self._paragraphs_obj_list = p_objects
 
-    def add_to_paragraph_href(self, paragraph_obj):
+    def _add_to_paragraph_href(self, paragraph_obj):
+        """ Добавление в текст объекта параграфа URL в квадратных скобках
+        :param paragraph_obj: bs4.element.Tag
+        """
         for a in paragraph_obj.findAll('a'):
             if a.has_attr('href') and a.string:
-                tpl = HREF_TPL
+                href_template = HREF_TEMPLATE
                 href = a.attrs['href']
                 if href[0] == '/':
                     href = f'https://{get_domain_name_from_url(self.url)}{href}'
-                tpl = tpl.replace('%url_href%', href)
-                tpl = tpl.replace('%url_text%', a.string)
-                a.string.replace_with(tpl)
+                href_template = href_template.replace('%url_href%', href)
+                href_template = href_template.replace('%url_text%', a.string)
+                a.string.replace_with(href_template)
 
-    @staticmethod
-    def split_lines(words='', max_len=80):
-        """Разбивка строк по указанному размеру"""
-        max_len -= 1
-        words_list = words.split()
-        strings_list = ''
+    def _split_paragraph(self, paragraph=''):
+        """ Разбивка одного абзаца по указанному размеру self._string_width.
+        :param paragraph: абзац.
+        :return: строка разбитая по максимальной длине
+        """
+        max_len = self._string_width
+        words_list = paragraph.split()
+        formatted_paragraph = ''
         tmp = ''
 
-        for i in range(len(words_list)):
-            tmp_current = '{} {}'.format(tmp, words_list[i])
-            tmp_current = tmp_current.strip()
+        for word in words_list:
+            current_tmp = f'{tmp} {word}'.strip()
 
-            if len(tmp_current) == max_len:
-                strings_list += tmp_current + ENDL
+            if len(current_tmp) == max_len:
+                formatted_paragraph += f'{current_tmp}{ENDL}'
                 tmp = ''
-            elif len(tmp_current) > max_len:
-                tmp += ENDL
-                strings_list += tmp
-                tmp = words_list[i]
-            elif len(tmp_current) < max_len:
-                tmp += ' {}'.format(words_list[i])
-                tmp = tmp.strip()
+            elif len(current_tmp) > max_len:
+                formatted_paragraph += f'{tmp}{ENDL}'
+                tmp = word
+            else:  # len(tmp_current) < max_len
+                tmp = current_tmp
 
-        strings_list += tmp
-        return strings_list.strip()
+        formatted_paragraph += tmp
+        return formatted_paragraph.strip()
 
-    def split_all_lines(self, strings='', max_len=80):
-        string_list = strings.splitlines()
+    def _split_all_paragraphs(self, paragraphs=''):
+        """ Разбивка всех абзацев по указанному размеру.
+        :param paragraphs: абзацы.
+        :return:
+        """
+        string_list = paragraphs.splitlines()
         new_string_list = []
-        for i in range(len(string_list)):
-            new_string_list.append(self.split_lines(string_list[i], max_len))
+        for string in string_list:
+            new_string_list.append(self._split_paragraph(string))
 
         return ENDL.join(new_string_list)
 
-    def render_text(self):
-        """Преобразование промежуточных данных в текст для сохранения"""
-
-        string_width = STRING_WIDTH
-
-        rendered_text = f'{self.header}{2*ENDL}'
-
+    def _formate_text(self):
+        """ Форматирование промежуточных данных в текст для сохранения
+        """
+        # todo сделать возможность использования шаблонов
+        # добавление заголовка
+        rendered_text = f'{self._header}{2 * ENDL}'
         paragraphs = ''
-        for p in self.paragraphs_obj:
-            self.add_to_paragraph_href(p)
-            p_string = p.get_text()
+
+        # добавление абзацев
+        for p_obj in self._paragraphs_obj_list:
+            self._add_to_paragraph_href(p_obj)
+            p_string = p_obj.get_text()
             paragraphs += f'{p_string}{2*ENDL}'
-
         rendered_text += f'{paragraphs}{ENDL}'
-        rendered_text = self.split_all_lines(rendered_text, string_width)
 
-        self.rendered_text = rendered_text
-        print(self.rendered_text)
+        # разбиение на максимальную длину
+        rendered_text = self._split_all_paragraphs(rendered_text)
+
+        self.formatted_text = rendered_text
+
+    def parse_page(self):
+        """ Парсинг страницы
+        """
+        # todo добавить оповещение пользователя о состоянии работы
+        self._send_request()
+        self._create_soup_obj()
+        if self._soup_obj is not None:
+            # todo добавить удаление тега footer и других не нужный из супа
+            self._find_header_from_soup()
+            self._find_paragraphs()
+            self._formate_text()
 
 
 if __name__ == "__main__":
     lenta_url = 'https://lenta.ru/news/2022/01/27/budushee_rublya/'
     gazeta_url = 'https://www.gazeta.ru/army/2022/01/27/14467249.shtml'
     obj = UniversalParser(lenta_url)
-    obj.get_request()
-    obj.get_soup()
-    obj.get_header()
-    obj.get_paragraphs()
-    obj.render_text()
+    obj.parse_page()
+    text_ = obj.formatted_text
+    print(text_)
