@@ -8,6 +8,8 @@ from utils import get_domain_name_from_url
 ENDL = '\r\n'
 STRING_WIDTH = 80
 HREF_TEMPLATE = '%url_text% [%url_href%]'
+TAGS_FOR_DELETE = ['script', 'noscript', 'style', 'noindex', 'form', 'img']
+CLASS_ATTRS_FOR_DELETE = ['social', 'reg', 'auth', 'footer', 'banner', 'mobile', 'comment', 'preview', 'inject', 'incut', 'infoblock']
 CLASS_ATTRS_FOR_SEARCH = ['content', 'context', 'article', 'text']
 
 
@@ -59,6 +61,20 @@ class UniversalParser:
             return
 
         self._soup_obj = BeautifulSoup(self._html_page, "html.parser")
+
+    def _delete_unnecessary_tags(self):
+        """ Удаление не нужных тегов из супа.
+        """
+        tags_for_delete = TAGS_FOR_DELETE
+        class_attrs_for_search = '|'.join(CLASS_ATTRS_FOR_DELETE)
+
+        if tags_for_delete:
+            for tag in self._soup_obj.body.findAll(tags_for_delete):
+                tag.extract()
+
+        if class_attrs_for_search:
+            for tag in self._soup_obj.body.findAll(attrs={'class': re.compile(class_attrs_for_search)}):
+                tag.extract()
 
     def _find_header_from_soup(self):
         """ Нахождение заголовка из self._soup_obj
@@ -169,7 +185,7 @@ class UniversalParser:
         self._send_request()
         self._create_soup_obj()
         if self._soup_obj is not None:
-            # todo добавить удаление тега footer и других не нужный из супа
+            self._delete_unnecessary_tags()
             self._find_header_from_soup()
             self._find_paragraphs()
             self._formate_text()
@@ -177,8 +193,8 @@ class UniversalParser:
 
 if __name__ == "__main__":
     lenta_url = 'https://lenta.ru/news/2022/01/27/budushee_rublya/'
-    gazeta_url = 'https://www.gazeta.ru/army/2022/01/27/14467249.shtml'
-    obj = UniversalParser(lenta_url)
+    gazeta_url = 'https://www.gazeta.ru/politics/2022/01/29/14476321.shtml'
+    obj = UniversalParser(gazeta_url)
     obj.parse_page()
     text_ = obj.formatted_text
     print(text_)
