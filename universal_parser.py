@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import re
 
+from config import ENDL, UniversalParserConfig
 from utils import get_domain_name_from_url
 
 
@@ -47,6 +48,24 @@ class UniversalParser:
         self._tags_for_search = ['p']
         # имена классов html, в которых будет искаться контент
         self._class_attrs_for_search = ['content', 'context', 'article', 'text']
+
+    def _use_settings_from_config(self):
+        """ Использование настроек из конфига.
+        """
+        config = UniversalParserConfig()
+        self._string_width = config.string_width
+        self._href_template = config.href_template
+        self._header_template = config.header_template
+        self._article_template = config.article_template
+        self._paragraph_template = config.paragraph_template
+
+        domain = get_domain_name_from_url(self.url)
+        tag_processing_settings = config.tag_processing_settings.get(domain, config.tag_processing_settings["default"])
+        self._tags_for_delete = tag_processing_settings.get("tags_for_delete")
+        self._class_attrs_for_delete = tag_processing_settings.get("class_attrs_for_delete")
+        self._tags_for_search = tag_processing_settings.get("tags_for_search", ['p'])
+        self._class_attrs_for_search = tag_processing_settings.get("class_attrs_for_search",
+                                                                   ['content', 'context', 'article', 'text'])
 
     def _send_request(self):
         """ Отправка запроса для получения страницы
@@ -196,6 +215,7 @@ class UniversalParser:
     def parse_page(self):
         """ Парсинг страницы
         """
+        self._use_settings_from_config()
         # todo добавить оповещение пользователя о состоянии работы
         self._send_request()
         self._create_soup_obj()
