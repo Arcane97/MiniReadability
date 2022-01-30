@@ -5,14 +5,6 @@ import re
 from utils import get_domain_name_from_url
 
 
-ENDL = '\r\n'
-STRING_WIDTH = 80
-HREF_TEMPLATE = '%url_text% [%url_href%]'
-TAGS_FOR_DELETE = ['script', 'noscript', 'style', 'noindex', 'form', 'img']
-CLASS_ATTRS_FOR_DELETE = ['social', 'reg', 'auth', 'footer', 'banner', 'mobile', 'comment', 'preview', 'inject', 'incut', 'infoblock']
-CLASS_ATTRS_FOR_SEARCH = ['content', 'context', 'article', 'text']
-
-
 class UniversalParser:
     """ Класс для парсинга сайтов со статьями.
     Парсит заголовок и абзацы.
@@ -24,8 +16,6 @@ class UniversalParser:
         # ссылка на сайт
         self.url = url
 
-        self._string_width = STRING_WIDTH
-
         # html код старицы (str)
         self._html_page = ''
         # BeautifulSoup объект страницы
@@ -36,6 +26,27 @@ class UniversalParser:
         self._paragraphs_obj_list = []
         # отформатированный текст
         self.formatted_text = ''
+
+        # Ширина строки
+        self._string_width = 80
+        # Шаблон форматирования ссылок. %url_text% - текст ссылки. %url_href% - адрес ссылки.
+        self._href_template = '%url_text% [%url_href%]'
+        # Шаблон форматирования заголовка. %header% - текст заголовка.
+        self._header_template = f'%header%{2*ENDL}'
+        # Шаблон форматирования статьи. %article% - весь текст статьи.
+        self._article_template = f'%article%{ENDL}'
+        # Шаблон форматирования абзаца. %paragraph% - текст параграфа.
+        self._paragraph_template = f'%paragraph%{2*ENDL}'
+
+        # теги, которые будут удалены из супа
+        self._tags_for_delete = ['script', 'noscript', 'style', 'noindex', 'form', 'img', 'figcaption']
+        # имена классов html, которые будут удалены из супа
+        self._class_attrs_for_delete = ['social', 'reg', 'auth', 'footer', 'banner', 'mobile', 'comment', 'preview',
+                                        'inject', 'incut', 'infoblock']
+        # теги, в которых будет искаться контент
+        self._tags_for_search = ['p']
+        # имена классов html, в которых будет искаться контент
+        self._class_attrs_for_search = ['content', 'context', 'article', 'text']
 
     def _send_request(self):
         """ Отправка запроса для получения страницы
@@ -65,15 +76,15 @@ class UniversalParser:
     def _delete_unnecessary_tags(self):
         """ Удаление не нужных тегов из супа.
         """
-        tags_for_delete = TAGS_FOR_DELETE
-        class_attrs_for_search = '|'.join(CLASS_ATTRS_FOR_DELETE)
+        tags_for_delete = self._tags_for_delete
+        class_attrs_for_delete = '|'.join(self._class_attrs_for_delete)
 
         if tags_for_delete:
             for tag in self._soup_obj.body.findAll(tags_for_delete):
                 tag.extract()
 
-        if class_attrs_for_search:
-            for tag in self._soup_obj.body.findAll(attrs={'class': re.compile(class_attrs_for_search)}):
+        if class_attrs_for_delete:
+            for tag in self._soup_obj.body.findAll(attrs={'class': re.compile(class_attrs_for_delete)}):
                 tag.extract()
 
     def _find_header_from_soup(self):
@@ -91,14 +102,15 @@ class UniversalParser:
     def _find_paragraphs(self):
         """ Нахождение тегов (bs4.element.Tag) с абзацами
         """
-        class_attrs_for_search = '|'.join(CLASS_ATTRS_FOR_SEARCH)
+        tags_for_search = self._tags_for_search
+        class_attrs_for_search = '|'.join(self._class_attrs_for_search)
         content_pattern = re.compile(class_attrs_for_search)
         content = self._soup_obj.body.findAll(attrs={"class": content_pattern})
         p_objects = []
         already_used = []
 
         for item in content:
-            paragraphs = item.findAll('p')
+            paragraphs = item.findAll(tags_for_search)
             for p in paragraphs:
                 if id(p) in already_used:
                     continue
@@ -113,9 +125,9 @@ class UniversalParser:
         """
         for a in paragraph_obj.findAll('a'):
             if a.has_attr('href') and a.string:
-                href_template = HREF_TEMPLATE
+                href_template = self._href_template
                 href = a.attrs['href']
-                if href[0] == '/':
+                if href.startswith('/'):
                     href = f'https://{get_domain_name_from_url(self.url)}{href}'
                 href_template = href_template.replace('%url_href%', href)
                 href_template = href_template.replace('%url_text%', a.string)
@@ -161,17 +173,20 @@ class UniversalParser:
     def _formate_text(self):
         """ Форматирование промежуточных данных в текст для сохранения
         """
-        # todo сделать возможность использования шаблонов
         # добавление заголовка
-        rendered_text = f'{self._header}{2 * ENDL}'
-        paragraphs = ''
+        header_template = self._header_template
+        header = header_template.replace('%header%', self._header)
+        rendered_text = header
 
-        # добавление абзацев
+        # добавление абзацев статьи
+        article = ''
         for p_obj in self._paragraphs_obj_list:
             self._add_to_paragraph_href(p_obj)
-            p_string = p_obj.get_text()
-            paragraphs += f'{p_string}{2*ENDL}'
-        rendered_text += f'{paragraphs}{ENDL}'
+            paragraph = p_obj.get_text()
+            paragraph_template = self._paragraph_template
+            article += paragraph_template.replace('%paragraph%', paragraph)
+        article_template = self._article_template
+        rendered_text += article_template.replace('%article%', article)
 
         # разбиение на максимальную длину
         rendered_text = self._split_all_paragraphs(rendered_text)
