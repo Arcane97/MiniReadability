@@ -216,7 +216,7 @@ class UniversalParser:
         """ Парсинг страницы
         """
         self._use_settings_from_config()
-        # todo добавить оповещение пользователя о состоянии работы
+        print(f'Отправляем запрос: {self.url}')
         self._send_request()
         self._create_soup_obj()
         if self._soup_obj is not None:
@@ -224,6 +224,7 @@ class UniversalParser:
             self._find_header_from_soup()
             self._find_paragraphs()
             self._formate_text()
+            print('Получили статью')
 
 
 if __name__ == "__main__":
