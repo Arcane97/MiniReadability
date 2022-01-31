@@ -109,12 +109,14 @@ class UniversalParser:
     def _find_header_from_soup(self):
         """ Нахождение заголовка из self._soup_obj
         """
-        header = self._soup_obj.body.find('h1')
-        if header is not None:
-            header = header.get_text()
+        header_obj = self._soup_obj.body.find('h1')
+        header = ''
+        if header_obj is not None:
+            header = header_obj.get_text()
         else:
-            header = self._soup_obj.head.find('meta', attrs={'name': 'title'})
-            header = header.attrs['content']
+            header_obj = self._soup_obj.head.find('meta', attrs={'name': 'title'})
+            if header_obj:
+                header = header_obj.attrs['content']
 
         self._header = header
 
