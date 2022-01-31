@@ -38,7 +38,13 @@ class UniversalParserConfig:
             "class_attrs_for_delete": ['social', 'reg', 'auth', 'footer', 'banner', 'mobile', 'comment', 'preview',
                                        'inject', 'incut', 'infoblock', '_1614F _3Mele'],
             "tags_for_search": ['p', 'strong', 'h2'],
-            "class_attrs_for_search": ['_2LS9B']  # у forbes действительно так называется классы
+            "class_attrs_for_search": ['_2LS9B']
         },
 
+        "ufa1.ru": {
+            "tags_for_delete": ['figcaption', 'noindex'],
+            "class_attrs_for_delete": ['_1Ol8s', '_2SrRn'],
+            "tags_for_search": ['p'],
+            "class_attrs_for_search": ['content', 'context', 'article', 'text']
+        },
     }
