@@ -34,7 +34,7 @@ class FileSaver:
             url_cut = url_cut[:-1]
 
         directory, file_name = os.path.split(url_cut)
-        if file_name.find('.') != '-1':
+        if file_name.find('.') != -1:
             file_name = re.sub(r'\.(.*)', '.txt', file_name)
         else:
             file_name += '.txt'
