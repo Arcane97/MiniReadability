@@ -5,19 +5,19 @@ import re
 class FileSaver:
     """ Класс сохраняющий текст в файл.
         Может создавать путь файла на основе url (метод create_path_from_url),
-        также можно задать пусть явно в конструкторе или в поле path.
+        также можно задать путь явно в конструкторе или в поле path.
 
         Использование:
-        file_saver = FileSaver('https://domen.ru/news/page.html')
+        file_saver = FileSaver('https://domain.ru/news/page.html')
         file_saver.create_path_from_url()
         text = 'example text'
         file_saver.save(text)
     """
     def __init__(self, url='', path='', folder='saved_pages'):
         """
-        :param url:
-        :param path:
-        :param folder:
+        :param url: ссылка
+        :param path: полный путь для сохранения
+        :param folder: имя папки, в которой будет сохраняться текст. Будет создана в корне проекта
         """
         self.url = url
         self.path = path
