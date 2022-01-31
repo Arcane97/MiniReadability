@@ -17,11 +17,11 @@ class UniversalParserConfig:
 
     # настройки для поиска тегов и имён классов html
     # словарь вида: {
-    #               "domain1.com": {
-    #                   "tags_for_delete": теги, которые будут удалены,
-    #                   "class_attrs_for_delete": имена классов html, которые будут удалены,
-    #                   "tags_for_search": теги, в которых будет искаться контент,
-    #                   "class_attrs_for_search": имена классов html, в которых будет искаться контент
+    #               "domain1.com": {                ключ: нужно указать домен, это всё между "https://" и следующего "/"
+    #                   "tags_for_delete":          теги, которые будут удалены,
+    #                   "class_attrs_for_delete":   имена классов html, которые будут удалены,
+    #                   "tags_for_search":          теги, в которых будет искаться контент,
+    #                   "class_attrs_for_search":   имена классов html, в которых будет искаться контент
     #               },
     #               "www.domain2.ru": {...}, ... }
     tag_processing_settings = {
@@ -33,20 +33,12 @@ class UniversalParserConfig:
             "class_attrs_for_search": ['content', 'context', 'article', 'text']
         },
 
-        "lenta.ru": {
+        "www.forbes.ru": {
             "tags_for_delete": ['script', 'noscript', 'style', 'noindex', 'form', 'img', 'figcaption'],
             "class_attrs_for_delete": ['social', 'reg', 'auth', 'footer', 'banner', 'mobile', 'comment', 'preview',
-                                       'inject', 'incut', 'infoblock'],
-            "tags_for_search": ['p'],
-            "class_attrs_for_search": ['content', 'context', 'article', 'text']
-        },
-
-        "www.gazeta.ru": {
-            "tags_for_delete": ['script', 'noscript', 'style', 'noindex', 'form', 'img', 'figcaption'],
-            "class_attrs_for_delete": ['social', 'reg', 'auth', 'footer', 'banner', 'mobile', 'comment', 'preview',
-                                       'inject', 'incut', 'infoblock'],
-            "tags_for_search": ['p'],
-            "class_attrs_for_search": ['content', 'context', 'article', 'text']
+                                       'inject', 'incut', 'infoblock', '_1614F _3Mele'],
+            "tags_for_search": ['p', 'strong', 'h2'],
+            "class_attrs_for_search": ['_2LS9B']  # у forbes действительно так называется классы
         },
 
     }
