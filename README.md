@@ -2,10 +2,16 @@
 Test task for Tensor
 
 
+___
+### Зависимости
+Используемые библиотеки на ходятся в файле requirements.txt.
 
-
-
-### Список URL, на которых проверял своё решение:
+Чтобы установить библиотеки, используйте в консоли:
+```console
+pip install -r requirements.txt
+```
+___
+### Список URL, на которых проверено решение:
 * https://lenta.ru/news/2022/01/27/budushee_rublya/
 * https://www.gazeta.ru/politics/2022/01/29/14476321.shtml
 * https://tass.ru/ekonomika/13568909
